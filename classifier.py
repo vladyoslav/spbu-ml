@@ -12,8 +12,8 @@ class Classifier:
 
     def classify(self, image):
         raw_results = self.__classifier(image)
-        results = list(
-            map(lambda item: dict.fromkeys([item["label"]], item["score"]), raw_results)
-        )
+        results = [
+            dict.fromkeys([item["label"]], item["score"]) for item in raw_results
+        ]
 
         return results
