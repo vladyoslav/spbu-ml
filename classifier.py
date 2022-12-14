@@ -1,24 +1,19 @@
-import streamlit as st
 from transformers import AutoFeatureExtractor, AutoModelForImageClassification, pipeline
 
 
-@st.cache(allow_output_mutation=True)
-def get_classifier():
-    name = "facebook/convnext-tiny-224"
-    extractor = AutoFeatureExtractor.from_pretrained(name)
-    model = AutoModelForImageClassification.from_pretrained(name)
-    classifier = pipeline(
-        "image-classification", model=model, feature_extractor=extractor
-    )
+class Classifier:
+    def __init__(self):
+        name = "facebook/convnext-tiny-224"
+        extractor = AutoFeatureExtractor.from_pretrained(name)
+        model = AutoModelForImageClassification.from_pretrained(name)
+        self.__classifier = pipeline(
+            "image-classification", model=model, feature_extractor=extractor
+        )
 
-    return classifier
+    def classify(self, image):
+        raw_results = self.__classifier(image)
+        results = list(
+            map(lambda item: dict.fromkeys([item["label"]], item["score"]), raw_results)
+        )
 
-
-def classify(image):
-    classifier = get_classifier()
-    raw_results = classifier(image)
-    results = list(
-        map(lambda item: dict.fromkeys([item["label"]], item["score"]), raw_results)
-    )
-
-    return results
+        return results

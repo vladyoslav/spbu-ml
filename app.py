@@ -1,7 +1,12 @@
 import streamlit as st
 from PIL import Image
 
-from classifier import classify
+from classifier import Classifier
+
+
+@st.cache(allow_output_mutation=True)
+def get_classifier():
+    return Classifier()
 
 
 def draw_bar(item):
@@ -41,7 +46,9 @@ def main():
         if button:
             with button_placeholder:
                 with st.spinner("Processing..."):
-                    results = classify(image)
+                    classifier = get_classifier()
+
+                    results = classifier.classify(image)
                     results_placeholder.subheader("Results")
 
                     tab1, tab2 = results_placeholder.tabs(["List", "Bar chart"])
