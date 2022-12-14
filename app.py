@@ -1,54 +1,59 @@
 import streamlit as st
-import cv2
-from huggingface_hub import from_pretrained_keras
 from PIL import Image
-import numpy as np
 
-ROWS, COLS = 150, 150
-
-model = from_pretrained_keras("carlosaguayo/cats_vs_dogs")
+from classifier import classify
 
 
-def process_image(img):
-    img = cv2.resize(img, (ROWS, COLS), interpolation=cv2.INTER_CUBIC)
-    img = img / 255.0
-    img = img.reshape(1, ROWS, COLS, 3)
+def draw_bar(item):
+    key, value = list(item.items())[0]
 
-    prediction = model.predict(img)[0][0]
-    if prediction >= 0.5:
-        message = 'I am {:.2%} sure this is a Cat'.format(prediction)
-    else:
-        message = 'I am {:.2%} sure this is a Dog'.format(1 - prediction)
-    return message
+    col1, col2 = st.columns([12, 1])
+
+    col1.write(key.capitalize())
+    col2.write("{:.4f}".format(value))
+
+    st.progress(value)
 
 
-# Webapp
+def main():
+    st.set_page_config(page_title="ConvNeXT", page_icon="🐝")
+    st.title("🐝 ConvNeXT tiny classifier app")
 
-st.set_page_config(
-    page_title="Cat vs dog classify",
-    page_icon="🐶"
-)
+    st.write("This is an image classification app based on ConvNeXT tiny-sized model.")
+    st.write("Model source: https://huggingface.co/facebook/convnext-tiny-224")
 
-st.title('🐶 Simple Cat vs Dog classification')
+    st.subheader("Choose a file")
+    uploaded_file = st.file_uploader(
+        "Choose a file", type=["png", "jpg", "jpeg"], label_visibility="collapsed"
+    )
 
-st.write('Choose a file')
+    image_placeholder = st.container()
+    button_placeholder = st.empty()
+    results_placeholder = st.container()
 
-col1, col2 = st.columns([2, 1])
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file)
+        image_placeholder.subheader("Selected image")
+        image_placeholder.image(image, use_column_width=True)
 
-image_placeholder = col1.empty()
+        button = button_placeholder.button("Classify", type="primary")
 
-uploaded_file = col1.file_uploader('Choose a file', type=['png', 'jpg', 'jpeg'], label_visibility='collapsed')
+        if button:
+            with button_placeholder:
+                with st.spinner("Processing..."):
+                    results = classify(image)
+                    results_placeholder.subheader("Results")
 
-button_placeholder = col2.empty()
-button = button_placeholder.button('Classify', type='primary', disabled=uploaded_file is None)
+                    tab1, tab2 = results_placeholder.tabs(["List", "Bar chart"])
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file)
-    image_placeholder.image(image, use_column_width=True)
+                    with tab1:
+                        for item in results:
+                            draw_bar(item)
 
-    if button:
-        with button_placeholder:
-            with st.spinner('Processing...'):
-                col2.subheader(process_image(np.array(image)))
+                    tab2.bar_chart(results)
 
-st.caption('by Vladislav Shalnev')
+    st.caption("by Vladislav Shalnev")
+
+
+if __name__ == "__main__":
+    main()
